@@ -1,1 +1,29 @@
-idf_component_register(SRCS "main.cpp" "avi.cpp" "bluetooth.cpp" "camera.cpp" "crc32.cpp" "currenttime.cpp" "jpg2rgb.cpp" "fat32.cpp" "motion.cpp" "packet.cpp" "wifiap.cpp" INCLUDE_DIRS ".")
+idf_component_register(SRCS
+	"main.cpp"
+	"./camera/avi.cpp"
+	"./camera/camera.cpp"
+	"./camera/jpg2rgb.cpp"
+	"./camera/motion.cpp"
+	"./communications/communications.cpp"
+	"./communications/communications_command.cpp"
+	"./communications/communications_command_delete_file.cpp"
+	"./communications/communications_command_send_file.cpp"
+	"./communications/communications_command_directory.cpp"
+	"./communications/communications_command_camera.cpp"
+	"./communications/communications_command_ota.cpp"
+	"./connections/bluetooth.cpp"
+	"./connections/packet.cpp"
+	"./connections/wifiap.cpp"
+	"./crc/crc32.cpp"
+	"./currenttime/currenttime.cpp"
+	"./fat32/fat32.cpp"
+
+	INCLUDE_DIRS
+	"."
+	"./camera"
+	"./currenttime"
+	"./fat32"
+	"./communications"
+	"./connections"
+	"./crc"
+)

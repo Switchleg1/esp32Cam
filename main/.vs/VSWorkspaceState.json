@@ -1,0 +1,15 @@
+{
+  "OutputFoldersPerTargetSystem": {
+    "Local Machine": [
+      "out\\build\\x64-Debug",
+      "out\\install\\x64-Debug"
+    ]
+  },
+  "ExpandedNodes": [
+    "",
+    "\\communications",
+    "\\connections"
+  ],
+  "SelectedNode": "\\connections\\bluetooth.h",
+  "PreviewInSolutionExplorer": false
+}
