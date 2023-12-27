@@ -54,5 +54,7 @@ COMReturn CComsCommandDeleteFile::idle(CPacket* packet)
 
 COMReturn CComsCommandDeleteFile::receive(CPacket* packet)
 {
-    return CComsCommand::receive(packet);
+    packet->clear();
+
+    return COM_OK;
 }

@@ -56,6 +56,8 @@ COMReturn CComsCommandSendFile::end(CPacket* packet)
 
 COMReturn CComsCommandSendFile::idle(CPacket* packet)
 {
+    packet->clear();
+
     return CComsCommand::idle(packet);
 }
 
@@ -76,7 +78,7 @@ COMReturn CComsCommandSendFile::receive(CPacket* packet)
 
     packet->clear();
 
-    return COM_ERROR_INVALID;
+    return COM_OK;
 }
 
 COMReturn CComsCommandSendFile::sendFile(CPacket* packet)

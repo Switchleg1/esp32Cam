@@ -67,7 +67,7 @@ COMReturn CComsCommandCamera::receive(CPacket* packet)
 
     packet->clear();
 
-    return COM_ERROR_INVALID;
+    return COM_OK;
 }
 
 COMReturn CComsCommandCamera::sendFrame(CPacket* packet)

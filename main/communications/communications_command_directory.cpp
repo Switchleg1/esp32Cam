@@ -27,6 +27,8 @@ COMReturn CComsCommandDirectory::start(CPacket* packet)
 
 COMReturn CComsCommandDirectory::end(CPacket* packet)
 {
+    packet->clear();
+
     return CComsCommand::end(packet);
 }
 
@@ -46,5 +48,7 @@ COMReturn CComsCommandDirectory::idle(CPacket* packet)
 
 COMReturn CComsCommandDirectory::receive(CPacket* packet)
 {
-    return CComsCommand::receive(packet);
+    packet->clear();
+
+    return COM_OK;
 }

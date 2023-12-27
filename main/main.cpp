@@ -54,7 +54,7 @@ extern "C" void app_main(void)
 
         Camera.setAllowMotion(!Communications.isConnected());
     
-        if (!(taskTickCount % 1000)) {
+        if (!(taskTickCount % 10000)) {
             ESP_LOGI(MAIN_TAG, "Free heap: [%d] RAM: [%d] PSRAM: [%d]", heap_caps_get_free_size(MALLOC_CAP_8BIT), 
                                                                         heap_caps_get_free_size(MALLOC_CAP_8BIT) - heap_caps_get_free_size(MALLOC_CAP_SPIRAM), 
                                                                         heap_caps_get_free_size(MALLOC_CAP_SPIRAM));

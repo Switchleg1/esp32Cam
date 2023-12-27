@@ -268,6 +268,7 @@ void CCommunications::parseTask(void* vPtr)
 					delete packet;
 
 					//check to see if we have completed the packet
+					ESP_LOGD(COMS_TAG, "parseTask(): partial left [%u]", Communications.partialPacket->size());
 					if (!Communications.partialPacket->size()) {
 						Communications.partialPacket->rewind();
 						COMHeader* header = (COMHeader*)Communications.partialPacket->data();
@@ -284,7 +285,8 @@ void CCommunications::parseTask(void* vPtr)
 					}
 				}
 				else {
-					//incoming data is larger than packet
+					ESP_LOGE(COMS_TAG, "parseTask(): received [%u] bytes, too large to fit in partial packet [%u]", packet->size(), Communications.partialPacket->size());
+
 					delete Communications.partialPacket;
 					Communications.partialPacket = NULL;
 
@@ -310,9 +312,11 @@ void CCommunications::parseTask(void* vPtr)
 					else if (packet->size() < header->size) {
 						//partial packet
 						ESP_LOGD(COMS_TAG, "parseTask(): starting partial packet with [%u] out of [%u]", packet->size(), header->size);
+						uint16_t packetSize					= packet->size();
 						Communications.partialPacketTimeout = 0;
 						Communications.partialPacket		= packet;
 						Communications.partialPacket->addSpace(header->size - Communications.partialPacket->size());
+						Communications.partialPacket->forward(packetSize);
 					}
 					else {
 						//packet is larger than header size
@@ -321,7 +325,7 @@ void CCommunications::parseTask(void* vPtr)
 					}
 				}
 				else {
-					ESP_LOGD(COMS_TAG, "parseTask(): packet header is invalid");
+					ESP_LOGW(COMS_TAG, "parseTask(): packet header is invalid");
 					sendResponse(packet, COM_COMMAND_INVALID_PACKET, COM_RESPONSE_INVALID_PACKET);
 				}
 			}
@@ -364,7 +368,7 @@ void  CCommunications::dataReceived(CPacket* packet)
 		return;
 	}
 
-	ESP_LOGI(COMS_TAG, "dataReceived(): packet received [%u] bytes", p->size());
+	ESP_LOGD(COMS_TAG, "dataReceived(): packet received [%u] bytes", p->size());
 
 	if (!Communications.receiveQueue || xQueueSend(Communications.receiveQueue, &p, pdMS_TO_TICKS(TIMEOUT_NORMAL)) != pdTRUE) {
 		ESP_LOGE(COMS_TAG, "dataReceived(): queue is full");

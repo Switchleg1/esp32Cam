@@ -6,6 +6,8 @@
 #include "communications_globals.h"
 #include "communications_command.h"
 
+#define CHECK_OTA_VERSION   false
+
 class CComsCommandOTA : public CComsCommand {
 public:
     CComsCommandOTA(uint8_t cmd, uint32_t timeout);
@@ -18,12 +20,12 @@ public:
 
 private:
     COMReturn               receivePacket(CPacket* packet);
+    COMReturn               endOTA(CPacket* packet);
 
     uint16_t                packetNumber;
     esp_ota_handle_t        updateHandle;
+    uint32_t                otaWriteLength;
     const esp_partition_t*  updatePartition;
-    const esp_partition_t*  runningPartition;
-    const esp_partition_t*  configuredPartition;
 };
 
 #endif
