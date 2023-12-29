@@ -20,7 +20,7 @@ COMReturn CComsCommandOTA::start(CPacket* packet)
     updateHandle    = 0;
     updatePartition = NULL;
 
-    //check current packet size
+    //check current packet information
     if (packet->size() != sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t)) {
         ESP_LOGE(OTA_TAG, "startOTA(): invalid header size [%u]", packet->size());
         packet->clear();
@@ -35,7 +35,7 @@ COMReturn CComsCommandOTA::start(CPacket* packet)
         ESP_LOGW(OTA_TAG, "startOTA(): (this can happen if either the OTA boot data or preferred boot image become corrupted somehow.)");
     }
 
-    ESP_LOGI(OTA_TAG, "Running partition type %d subtype %d (offset 0x%08lx)", runningPartition->type, runningPartition->subtype, runningPartition->address);
+    ESP_LOGI(OTA_TAG, "startOTA(): running partition type [%d] subtype [%d] (offset 0x%08lx)", runningPartition->type, runningPartition->subtype, runningPartition->address);
 
     updatePartition = esp_ota_get_next_update_partition(NULL);
     if (!updatePartition) {
@@ -47,15 +47,39 @@ COMReturn CComsCommandOTA::start(CPacket* packet)
 
     ESP_LOGI(OTA_TAG, "startOTA(): writing to partition subtype %d at offset 0x%lx", updatePartition->subtype, updatePartition->address);
 
-    // check current version with downloading
+    esp_app_desc_t runningAppInfo;
+    if (esp_ota_get_partition_description(runningPartition, &runningAppInfo) != ESP_OK) {
+        ESP_LOGE(OTA_TAG, "startOTA(): unable to get current partition information");
+        packet->clear();
+
+        return COM_ERROR;
+    }
+
     esp_app_desc_t newAppInfo;
     memcpy(&newAppInfo, &packet->data()[sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t)], sizeof(esp_app_desc_t));
-    ESP_LOGI(OTA_TAG, "startOTA(): new firmware version [%s]", newAppInfo.version);
 
-    esp_app_desc_t runningAppInfo;
-    if (esp_ota_get_partition_description(runningPartition, &runningAppInfo) == ESP_OK) {
-        ESP_LOGI(OTA_TAG, "startOTA(): running firmware version [%s]", runningAppInfo.version);
+    //check project name
+    ESP_LOGI(OTA_TAG, "startOTA(): running project name is [%s]", runningAppInfo.project_name);
+    ESP_LOGI(OTA_TAG, "startOTA(): new project name is [%s]", newAppInfo.project_name);
+    if (CHECK_OTA_PROJECT == true) {
+        if (memcmp(newAppInfo.project_name, runningAppInfo.project_name, sizeof(newAppInfo.project_name)) != 0) {
+            ESP_LOGW(OTA_TAG, "startOTA(): project names do not match, aborting update.");
+
+            packet->clear();
+
+            return COM_ERROR;
+        }
+        else {
+            ESP_LOGI(OTA_TAG, "startOTA(): project names match.");
+        }
     }
+    else {
+        ESP_LOGI(OTA_TAG, "startOTA(): project name check skipped.");
+    }
+
+    // check current version with download
+    ESP_LOGI(OTA_TAG, "startOTA(): running firmware version [%s]", runningAppInfo.version);
+    ESP_LOGI(OTA_TAG, "startOTA(): new firmware version [%s]", newAppInfo.version);
 
     const esp_partition_t* last_invalid_app = esp_ota_get_last_invalid_partition();
     esp_app_desc_t invalidAppInfo;
@@ -63,9 +87,8 @@ COMReturn CComsCommandOTA::start(CPacket* packet)
         ESP_LOGI(OTA_TAG, "startOTA(): last invalid firmware version [%s]", invalidAppInfo.version);
     }
 
-    /*// check new version with last invalid partition
-    if (CHECK_OTA_VERSION && last_invalid_app != NULL) {
-        if (memcmp(invalidAppInfo.version, newAppInfo.version, sizeof(newAppInfo.version)) == 0) {
+    if (CHECK_OTA_VERSION == true) {
+        if (last_invalid_app != NULL && memcmp(invalidAppInfo.version, newAppInfo.version, sizeof(newAppInfo.version)) == 0) {
             ESP_LOGW(OTA_TAG, "startOTA(): new version is the same as invalid version.");
             ESP_LOGW(OTA_TAG, "startOTA(): previously, there was an attempt to launch the firmware with [%s] version, but it failed.", invalidAppInfo.version);
             ESP_LOGW(OTA_TAG, "startOTA(): the firmware has been rolled back to the previous version.");
@@ -74,16 +97,18 @@ COMReturn CComsCommandOTA::start(CPacket* packet)
 
             return COM_ERROR;
         }
+
+        if(memcmp(newAppInfo.version, runningAppInfo.version, sizeof(newAppInfo.version)) == 0) {
+            ESP_LOGW(OTA_TAG, "startOTA(): current running version is the same as a new. we will not continue the update.");
+
+            packet->clear();
+
+            return COM_ERROR;
+        }
     }
-
-    // check new version with current partition
-    if (CHECK_OTA_VERSION && memcmp(newAppInfo.version, runningAppInfo.version, sizeof(newAppInfo.version)) == 0) {
-        ESP_LOGW(OTA_TAG, "startOTA(): current running version is the same as a new. we will not continue the update.");
-
-        packet->clear();
-
-        return COM_ERROR;
-    }*/
+    else {
+        ESP_LOGI(OTA_TAG, "startOTA(): version check skipped.");
+    }
 
     // request to begin the process
     esp_err_t err = esp_ota_begin(updatePartition, OTA_WITH_SEQUENTIAL_WRITES, &updateHandle);
@@ -108,8 +133,6 @@ COMReturn CComsCommandOTA::start(CPacket* packet)
     otaWriteLength += packet->size();
 
     packet->clear();
-
-    ESP_LOGI(OTA_TAG, "startOTA(): successful");
 
     return CComsCommand::start(packet);
 }
@@ -164,11 +187,18 @@ COMReturn CComsCommandOTA::receivePacket(CPacket* packet)
     uint16_t currentPacketNumber = *((uint16_t*)packet->data());
     if (packetNumber != currentPacketNumber) {
         ESP_LOGE(OTA_TAG, "receivePacket(): incorrect packet number [%u:%u]", currentPacketNumber, packetNumber);
+
+        //check resend count
+        if (++resendCount > OTA_MAX_RESEND) {
+            ESP_LOGE(OTA_TAG, "receivePacket(): exceeded max resend count [%u]", OTA_MAX_RESEND);
+
+            packet->clear();
+
+            return COM_ERROR;
+        }
         
-        uint8_t newData[3];
-        newData[0] = 0xFF;
-        *((uint16_t*)(newData + 1)) = packetNumber;
-        packet->copy(newData, 3);
+        //resend request
+        packet->copy((uint8_t*)&packetNumber, 2);
 
         return CComsCommand::receive(packet);
     }
@@ -234,7 +264,7 @@ COMReturn CComsCommandOTA::endOTA(CPacket* packet)
 
         return COM_ERROR;
     }
-    ESP_LOGI(OTA_TAG, "endOTA(): Prepare to restart system!");
+    ESP_LOGI(OTA_TAG, "endOTA(): prepare to restart system!");
 
     esp_restart();
 

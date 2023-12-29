@@ -37,10 +37,14 @@ COMReturn CComsCommandCamera::end(CPacket* packet)
 
     clearFrame();
 
+    uint8_t response;
     if (frameComplete) {
-        uint8_t response = 0xFF;
-        packet->copy(&response, 1);
+        response = COM_RESPONSE_COMPLETE;
     }
+    else {
+        response = COM_RESPONSE_ERROR;
+    }
+    packet->copy(&response, 1);
 
     return CComsCommand::end(packet);
 }

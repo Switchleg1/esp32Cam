@@ -620,7 +620,7 @@ COMReturn CCommunications::callCommand(CPacket* packet)
 				ESP_LOGD(COMS_TAG, "callCommand(): task ok");
 
 				if (!packet->size()) {
-					sendResponse(packet, pCommand->command(), COM_RESPONSE_OK);
+					sendResponse(packet, Communications.commandLast, COM_RESPONSE_OK);
 				}
 				else {
 					sendPacket(packet);
@@ -632,7 +632,7 @@ COMReturn CCommunications::callCommand(CPacket* packet)
 				ESP_LOGD(COMS_TAG, "callCommand(): task wait");
 
 				if (!packet->size()) {
-					sendResponse(packet, pCommand->command(), COM_RESPONSE_WAIT);
+					sendResponse(packet, Communications.commandLast, COM_RESPONSE_WAIT);
 				}
 				else {
 					sendPacket(packet);
@@ -642,7 +642,7 @@ COMReturn CCommunications::callCommand(CPacket* packet)
 
 			case COM_COMPLETE:
 				ESP_LOGI(COMS_TAG, "callCommand(): task complete");
-
+				
 				sendPacket(packet);
 				return endCurrentCommand();
 				break;

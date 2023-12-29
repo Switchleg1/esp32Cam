@@ -38,7 +38,7 @@ COMReturn CComsCommandDeleteFile::idle(CPacket* packet)
     if (Fat32.deleteFile(fileName) != FAT_RET_OK) {
         ESP_LOGI(DEL_FILE_TAG, "idle(): File failed to delete [%s]", fileName);
 
-        uint8_t ret = 0xFF;
+        uint8_t ret = COM_RESPONSE_ERROR;
         packet->copy(&ret, 1);
 
         return COM_ERROR;
@@ -46,7 +46,7 @@ COMReturn CComsCommandDeleteFile::idle(CPacket* packet)
 
     ESP_LOGI(DEL_FILE_TAG, "idle(): File deleted [%s]", fileName);
 
-    uint8_t ret = 0x01;
+    uint8_t ret = COM_RESPONSE_COMPLETE;
     packet->copy(&ret, 1);
 
     return COM_COMPLETE;

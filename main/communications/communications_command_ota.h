@@ -7,6 +7,9 @@
 #include "communications_command.h"
 
 #define CHECK_OTA_VERSION   false
+#define CHECK_OTA_PROJECT   true
+
+#define OTA_MAX_RESEND      20
 
 class CComsCommandOTA : public CComsCommand {
 public:
@@ -26,6 +29,7 @@ private:
     esp_ota_handle_t        updateHandle;
     uint32_t                otaWriteLength;
     const esp_partition_t*  updatePartition;
+    uint8_t                 resendCount;
 };
 
 #endif
